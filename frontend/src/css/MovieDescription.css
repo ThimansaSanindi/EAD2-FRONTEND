@@ -1,0 +1,318 @@
+.movie-description-page {
+  background: black;
+  color: white;
+  min-height: 100vh;
+}
+
+.back-btn {
+  background: transparent;
+  border: 1px solid #ffd700;
+  color: #ffd700;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  margin-bottom: 2rem;
+  margin-left: 2rem;
+  margin-top: 2rem;
+}
+
+.back-btn:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+/* Movie Header */
+.movie-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 3rem;
+  padding: 0 2rem;
+}
+
+.movie-header h1 {
+  color: #ffd700;
+  font-size: 2.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.poster-and-storyline {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1.5rem;
+  align-items: flex-start;
+}
+
+.poster-section {
+  width: 40%;
+  flex-shrink: 0;
+}
+
+.movie-poster-large {
+  width: 100%;
+}
+
+.movie-poster-large img {
+  width: 85%;
+  height: auto;
+  max-height: 500px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  display: block;
+}
+
+.storyline-section {
+  width: 60%;
+  flex-grow: 1;
+}
+
+.storyline-section h2 {
+  color: #ffd700;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.storyline-section p {
+  line-height: 1.6;
+  font-size: 1rem;
+  color: #e0e0e0;
+  margin-bottom: 1.5rem;
+}
+
+.movie-info {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.movie-info .movie-meta {
+  margin-bottom: 0;
+}
+
+
+.movie-meta {
+  display: flex;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.movie-meta span {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+}
+
+.movie-meta .imdb-rating {
+  background: rgba(255, 255, 255, 0.1);
+  font-weight: bold;
+}
+
+
+/* Sections */
+.cast-section,
+.showtimes-section {
+  margin-bottom: 3rem;
+  padding: 0 2rem;
+}
+
+.cast-section h2,
+.showtimes-section h2 {
+  color: #ffd700;
+  margin-bottom: 1rem;
+  font-size: 1.5rem;
+}
+
+.cast-info {
+  background: #1a1a1a;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.cast-info p {
+  margin: 0.5rem 0;
+  color: #b0b0b0;
+}
+
+/* Date Selector */
+.date-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 2rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.date-btn {
+  padding: 1rem 1.5rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  min-width: 120px;
+  transition: all 0.3s ease;
+}
+
+.date-btn:hover {
+  border-color: #ffd700;
+}
+
+.date-btn.active {
+  background: #ffd700;
+  color: black;
+  border-color: #ffd700;
+}
+
+/* Cinemas List */
+.cinemas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.cinema-card {
+  background: #1a1a1a;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.cinema-info h3 {
+  color: #ffd700;
+  margin-bottom: 0.5rem;
+  font-size: 1.2rem;
+}
+
+.location {
+  color: #999;
+  margin-bottom: 1rem;
+}
+
+.showtimes-grid {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.showtime-btn {
+  background: #2a2a2a;
+  border: 1px solid #333;
+  color: white;
+  padding: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 100px;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.showtime-btn:hover {
+  border-color: #ffd700;
+  transform: translateY(-2px);
+}
+
+.showtime-btn .time {
+  font-weight: bold;
+  font-size: 1rem;
+}
+
+.showtime-btn .type {
+  font-size: 0.8rem;
+  color: #ffd700;
+}
+
+
+
+.not-found {
+  text-align: center;
+  padding: 4rem;
+  color: #ffd700;
+  font-size: 1.5rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .movie-description-page {
+    padding: 1rem;
+  }
+
+  .movie-header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .movie-poster-large img {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  .movie-meta {
+    justify-content: center;
+  }
+
+  .date-selector {
+    flex-wrap: wrap;
+  }
+
+  .showtimes-grid {
+    justify-content: center;
+  }
+}
+
+/* Terms & Conditions Modal */
+.terms-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+.terms-modal {
+  background: #0f0f0f;
+  color: #f5f5f5;
+  width: 90%;
+  max-width: 720px;
+  padding: 1.5rem;
+  border-radius: 10px;
+  border: 1px solid #333;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+}
+.terms-modal h3 {
+  color: #ffd700;
+  margin-top: 0;
+}
+.terms-modal ol {
+  margin-left: 1.2rem;
+  color: #ddd;
+}
+.terms-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+.terms-actions .btn {
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.terms-actions .btn.cancel {
+  background: transparent;
+  color: #fff;
+  border-color: #555;
+}
+.terms-actions .btn.accept {
+  background: #ffd700;
+  color: #000;
+  border-color: #ffd700;
+}

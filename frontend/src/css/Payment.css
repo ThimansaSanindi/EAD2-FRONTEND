@@ -1,0 +1,272 @@
+.payment-page {
+  color: #fff;
+  min-height: 100vh;
+  background: #0b0b0b;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.payment-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.movie-info {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.location {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.date-time {
+  color: #999;
+  font-size: 0.95rem;
+}
+
+.date-time .separator {
+  margin: 0 0.5rem;
+}
+
+.selected-seats {
+  color: #ddd;
+  font-size: 0.95rem;
+}
+
+.payment-main {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+/* Purchase Summary */
+.purchase-summary {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #222;
+}
+
+.purchase-summary h3 {
+  margin: 0 0 1rem 0;
+  color: #ffd700;
+  font-size: 1.1rem;
+}
+
+.summary-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.95rem;
+}
+
+.summary-row span {
+  color: #ddd;
+}
+
+.summary-row .amount {
+  color: #fff;
+  font-weight: 600;
+  min-width: 120px;
+  text-align: right;
+}
+
+.summary-divider {
+  height: 1px;
+  background: #333;
+  margin: 0.5rem 0;
+}
+
+.summary-row.highlight {
+  background: rgba(255, 215, 0, 0.05);
+  padding: 0.75rem;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+/* Payment Method */
+.payment-method {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1.5rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+  border: 1px solid #222;
+}
+
+.payment-method h3 {
+  margin: 0 0 1rem 0;
+  color: #ffd700;
+  font-size: 1.1rem;
+}
+
+.method-selector {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.method-option {
+  flex: 1;
+  min-width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.01);
+  transition: all 0.2s;
+}
+
+.method-option input {
+  cursor: pointer;
+}
+
+.method-option.active {
+  background: rgba(255, 215, 0, 0.1);
+  border-color: #ffd700;
+}
+
+.method-option span {
+  font-weight: 600;
+}
+
+/* Card Details */
+.card-details {
+  background: rgba(255, 255, 255, 0.02);
+  padding: 1.5rem;
+  border-radius: 8px;
+  border: 1px solid #222;
+}
+
+.card-details h3 {
+  margin: 0 0 1rem 0;
+  color: #ffd700;
+  font-size: 1.1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+  color: #ddd;
+  font-weight: 600;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid #333;
+  border-radius: 6px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.95rem;
+  box-sizing: border-box;
+}
+
+.form-group input::placeholder {
+  color: #666;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #ffd700;
+  background: #222;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.button-row {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.decline-btn,
+.pay-btn {
+  flex: 1;
+  padding: 0.7rem;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.decline-btn {
+  background: #444;
+  color: #fff;
+}
+
+.decline-btn:hover:not(:disabled) {
+  background: #555;
+}
+
+.pay-btn {
+  background: #ffd700;
+  color: #000;
+}
+
+.pay-btn:hover:not(:disabled) {
+  background: #ffed4e;
+}
+
+.decline-btn:disabled,
+.pay-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .payment-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .form-row .form-group {
+    margin-bottom: 1rem;
+  }
+}
