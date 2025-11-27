@@ -1,8 +1,9 @@
 // src/components/Login.js
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import "../css/Login.css";
 import { loginUser, registerUser } from "../services/api";
+import { AuthContext } from "../contexts/AuthContext";
 
 function Login() {
     const [email, setEmail] = useState("");
@@ -18,6 +19,7 @@ function Login() {
     const [error, setError] = useState("");
     const navigate = useNavigate();
     const location = useLocation();
+    const { setUser } = useContext(AuthContext);
 
     const handleLogin = async (e) => {
         e.preventDefault();
@@ -40,9 +42,10 @@ function Login() {
             // Call the actual API
             const user = await loginUser({ email, password });
             
-            // Store user data in localStorage or context
+            // Store user data in localStorage and context
             localStorage.setItem('user', JSON.stringify(user));
             localStorage.setItem('token', user.id); // Using user ID as token for now
+            if (setUser) setUser(user);
             
             // Clear form
             setEmail("");

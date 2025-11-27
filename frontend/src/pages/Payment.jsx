@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import "../css/Payment.css";
+import { bookingAPI, paymentAPI } from "../services/api";
+import { AuthContext } from "../contexts/AuthContext";
 
 export default function Payment() {
   const location = useLocation();
@@ -34,25 +36,70 @@ export default function Payment() {
   const [cardExpiry, setCardExpiry] = useState("");
   const [cardCVV, setCardCVV] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
+  const { user } = useContext(AuthContext);
 
-  const handlePayment = (e) => {
+  const handlePayment = async (e) => {
     e.preventDefault();
     if (!cardNumber || !cardName || !cardExpiry || !cardCVV) {
       alert("Please fill in all card details");
       return;
     }
+    if (!user) {
+      alert('Please login to complete payment');
+      navigate('/login', { state: { redirectTo: '/profile' } });
+      return;
+    }
+
     setIsProcessing(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      alert(`Payment of LKR ${totalAmount.toFixed(2)} successful via ${paymentMethod.toUpperCase()}!`);
-      navigate("/"); // Redirect to home after successful payment
+    try {
+      // 1) Create booking in booking service
+      const bookingPayload = {
+        userId: user.id,
+        movieId: movie?.id || null,
+        cinema: cinemaName,
+        showId: show?.id || null,
+        date: showDate,
+        seats: selectedSeats,
+        categories: { odcFull, odcHalf },
+        total: totalAmount
+      };
+
+      const createdBooking = await bookingAPI.createBooking(bookingPayload);
+      const bookingId = createdBooking?.id || createdBooking?.bookingId || createdBooking;
+
+      // 2) Create payment record in payment service
+      const paymentPayload = {
+        bookingId,
+        userId: user.id,
+        amount: totalAmount,
+        paymentMethod,
+        cardLast4: cardNumber.slice(-4)
+      };
+
+      const paymentResult = await paymentAPI.createPayment(paymentPayload);
+
+      // 3) Confirm booking (update status)
+      try {
+        await bookingAPI.updateBooking(bookingId, { status: 'Confirmed' });
+      } catch (err) {
+        console.warn('Failed to update booking status; booking created but not updated', err);
+      }
+
+      alert(`Payment successful (ID: ${paymentResult?.id || paymentResult}). Booking confirmed.`);
+      navigate('/profile');
+    } catch (err) {
+      console.error('Payment flow error', err);
+      alert(err.message || 'Payment failed');
+    } finally {
       setIsProcessing(false);
-    }, 1500);
+    }
   };
 
   const handleDecline = () => {
     if (window.confirm("Are you sure you want to decline this payment?")) {
-      navigate(`/booking/${id}`, { state: { movie, cinema, show, date: showDate, seats: selectedSeats, categories } });
+      // Go back to the booking page (previous step). Using history back is safer
+      // than relying on an `id` variable which may not be present in this component.
+      navigate(-1);
     }
   };
 

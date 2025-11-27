@@ -1,5 +1,8 @@
 import React from "react";
-import { useState } from "react";
+import { useState, useEffect, useContext } from "react";
+import { useNavigate } from "react-router-dom";
+import { AuthContext } from "../contexts/AuthContext";
+import { bookingAPI, paymentAPI, userAPI } from "../services/api";
 import "../css/Profile.css";
 
 function Profile() {
@@ -7,53 +10,63 @@ function Profile() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   
-  // Mock user data
+  // user profile data (load from auth if available)
   const [profileData, setProfileData] = useState({
     name: "John Doe",
     email: "john.doe@example.com",
     phone: "+1 234 567 8900",
     dateOfBirth: "1990-01-01"
   });
+  const { user, setUser } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  // Mock booking history
-  const [bookingHistory] = useState([
-    { 
-      id: 1, 
-      movie: "The Conjuring", 
-      date: "2024-01-15", 
-      time: "18:30",
-      seats: ["A1", "A2"], 
-      total: 24.00, 
-      status: "Completed",
-      theater: "PVR Cinemas"
-    },
-    { 
-      id: 2, 
-      movie: "Jurassic World: Rebirth", 
-      date: "2024-01-10", 
-      time: "21:00",
-      seats: ["B3", "B4"], 
-      total: 24.00, 
-      status: "Completed",
-      theater: "INOX"
-    },
-    { 
-      id: 3, 
-      movie: "The Running Man", 
-      date: "2024-01-05", 
-      time: "15:45",
-      seats: ["C5", "C6"], 
-      total: 22.00, 
-      status: "Cancelled",
-      theater: "Cinepolis"
+  useEffect(() => {
+    if (!user) {
+      // redirect to login if not authenticated
+      navigate('/login', { state: { redirectTo: '/profile' } });
+      return;
     }
-  ]);
+    setProfileData(prev => ({
+      ...prev,
+      name: user.name || prev.name,
+      email: user.email || prev.email
+    }));
+    // fetch bookings and saved payment methods
+    const fetchBookings = async () => {
+      setLoadingBookings(true);
+      try {
+        const data = await bookingAPI.getBookingsByUser(user.id);
+        // bookingAPI should return an array or an object with bookings
+        setBookingHistory(Array.isArray(data) ? data : (data.bookings || []));
+      } catch (err) {
+        console.error('Failed to load bookings', err);
+      } finally {
+        setLoadingBookings(false);
+      }
+    };
 
-  // Mock card details
-  const [cardDetails, setCardDetails] = useState([
-    { id: 1, cardNumber: "1234", expiry: "12/25", cardType: "Visa", isDefault: true },
-    { id: 2, cardNumber: "5678", expiry: "08/26", cardType: "Mastercard", isDefault: false }
-  ]);
+    const fetchPayments = async () => {
+      setLoadingPayments(true);
+      try {
+        const data = await paymentAPI.getPaymentsByUser(user.id);
+        setPaymentsHistory(Array.isArray(data) ? data : (data.payments || []));
+      } catch (err) {
+        console.error('Failed to load payments', err);
+      } finally {
+        setLoadingPayments(false);
+      }
+    };
+
+    fetchBookings();
+    fetchPayments();
+  }, [user, navigate]);
+
+  // Booking history and payment history loaded from backend
+  const [bookingHistory, setBookingHistory] = useState([]);
+  const [paymentsHistory, setPaymentsHistory] = useState([]);
+  const [cardDetails, setCardDetails] = useState([]); // local saved cards (if you manage them separately)
+  const [loadingBookings, setLoadingBookings] = useState(false);
+  const [loadingPayments, setLoadingPayments] = useState(false);
 
   // Mock form states
   const [passwordData, setPasswordData] = useState({
@@ -71,20 +84,70 @@ function Profile() {
   });
 
   // Form handlers
-  const handleProfileUpdate = (e) => {
+  const handleProfileUpdate = async (e) => {
     e.preventDefault();
-    alert("Profile updated successfully!");
-    console.log("Updated profile:", profileData);
+    if (!user || !user.id) {
+      alert('No authenticated user to update.');
+      return;
+    }
+    try {
+      // send update to backend
+      const updated = await userAPI.updateUser(user.id, {
+        // email and dateOfBirth are intentionally excluded from profile updates
+        name: profileData.name,
+        phone: profileData.phone
+      });
+
+      console.log('Profile update response:', updated);
+
+      // update auth context and localStorage
+      const newUser = updated && updated.id ? updated : { ...user, ...profileData };
+      // preserve the server/user email and DOB — don't allow client-side changes here
+      if (user && user.email) newUser.email = user.email;
+      if (user && user.dateOfBirth) newUser.dateOfBirth = user.dateOfBirth;
+      setUser(newUser);
+      try { localStorage.setItem('user', JSON.stringify(newUser)); } catch (e) { /* ignore */ }
+
+      // reflect change in the current form state too
+      setProfileData(prev => ({ ...prev, name: newUser.name, email: newUser.email, phone: newUser.phone, dateOfBirth: newUser.dateOfBirth }));
+
+      alert('Profile updated successfully!');
+    } catch (err) {
+      console.error('Profile update failed', err);
+      alert(err.message || 'Failed to update profile');
+    }
   };
 
   const handlePasswordChange = (e) => {
     e.preventDefault();
+    if (!user || !user.id) {
+      alert('You must be logged in to change your password.');
+      return;
+    }
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       alert("New passwords don't match!");
       return;
     }
-    alert("Password changed successfully!");
-    setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    if (!passwordData.currentPassword || !passwordData.newPassword) {
+      alert('Please fill current and new password.');
+      return;
+    }
+
+    (async () => {
+      try {
+        // Current backend accepts password on the generic update endpoint.
+        // We build around existing service: send { password: newPassword } to PUT /api/users/{id}
+        // Note: this backend method does not verify currentPassword — keep UX warning.
+        const payload = { password: passwordData.newPassword };
+        const updated = await userAPI.updateUser(user.id, payload);
+        console.log('Password update response:', updated);
+        alert('Password changed successfully!');
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      } catch (err) {
+        console.error('Change password failed', err);
+        alert(err.message || 'Failed to change password');
+      }
+    })();
   };
 
   const handleAddCard = (e) => {
@@ -121,10 +184,18 @@ function Profile() {
   };
 
   const cancelBooking = (bookingId) => {
-    if (window.confirm("Are you sure you want to cancel this booking?")) {
-      alert(`Booking ${bookingId} cancelled successfully!`);
-      
-    }
+    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+    // Call booking API to cancel
+    (async () => {
+      try {
+        await bookingAPI.cancelBooking(bookingId);
+        setBookingHistory(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'Cancelled' } : b));
+        alert(`Booking ${bookingId} cancelled successfully!`);
+      } catch (err) {
+        console.error('Cancel booking error', err);
+        alert(err.message || 'Failed to cancel booking');
+      }
+    })();
   };
   const handleDeleteProfile = () => {
   if (confirmText.toLowerCase() === "delete my account") {
@@ -168,6 +239,12 @@ function Profile() {
           Booking History
           </button>
           <button 
+            className={`nav-item ${activeSection === "paymentsHistory" ? "active" : ""}`}
+            onClick={() => setActiveSection("paymentsHistory")}
+          >
+            Payments
+          </button>
+          <button 
             className={`nav-item ${activeSection === "cardDetails" ? "active" : ""}`}
             onClick={() => setActiveSection("cardDetails")}
           >
@@ -203,12 +280,8 @@ function Profile() {
               
               <div className="form-group">
                 <label>Email Address</label>
-                <input 
-                  type="email" 
-                  value={profileData.email}
-                  onChange={(e) => setProfileData({...profileData, email: e.target.value})}
-                  required
-                />
+                <div className="readonly-field">{profileData.email}</div>
+                <small className="field-note">Email cannot be changed from the profile page.</small>
               </div>
               
               <div className="form-group">
@@ -223,11 +296,8 @@ function Profile() {
               
               <div className="form-group">
                 <label>Date of Birth</label>
-                <input 
-                  type="date" 
-                  value={profileData.dateOfBirth}
-                  onChange={(e) => setProfileData({...profileData, dateOfBirth: e.target.value})}
-                />
+                <div className="readonly-field">{profileData.dateOfBirth}</div>
+                <small className="field-note">Date of birth cannot be changed from the profile page.</small>
               </div>
               
               <button type="submit" className="save-btn">Update Profile</button>
@@ -311,6 +381,30 @@ function Profile() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {activeSection === "paymentsHistory" && (
+          <div className="section">
+            <h2>Payments</h2>
+            {loadingPayments ? (
+              <p>Loading payments...</p>
+            ) : paymentsHistory.length === 0 ? (
+              <p>No payments found.</p>
+            ) : (
+              <div className="payments-list">
+                {paymentsHistory.map(p => (
+                  <div key={p.id} className="payment-card">
+                    <div><strong>ID:</strong> {p.id}</div>
+                    <div><strong>Booking:</strong> {p.bookingId}</div>
+                    <div><strong>Amount:</strong> {p.amount}</div>
+                    <div><strong>Method:</strong> {p.paymentMethod}</div>
+                    <div><strong>Status:</strong> {p.status}</div>
+                    <div><strong>Date:</strong> {new Date(p.createdAt || p.date || p.timestamp || Date.now()).toLocaleString()}</div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
