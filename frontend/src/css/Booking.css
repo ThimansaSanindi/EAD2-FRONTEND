@@ -1,0 +1,83 @@
+.booking-page {
+  color: #fff;
+  min-height: 100vh;
+  background: #0b0b0b;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.booking-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid #222;
+  padding-bottom: 1rem;
+  margin-bottom: 1rem;
+}
+.booking-title h2 { color: #00a2ff; margin: 0; }
+.cinema-line { color: #ddd; margin-top: 6px; }
+.cinema-line .location { color: #bdbdbd; }
+.booking-meta { text-align: right; color: #ddd; }
+
+.booking-main { max-width: 960px; margin: 1.2rem auto; }
+.seats-wrapper { display: flex; flex-direction: column; gap: 0.75rem; background: transparent; padding: 0.5rem; }
+
+.seats-columns { display: flex; gap: 1rem; justify-content: center; }
+.seats-column { flex: 1; max-width: 480px; background: rgba(255,255,255,0.02); padding: 0.6rem; border-radius: 8px; display: flex; flex-direction: column; align-items: center; }
+.seat-row { width: 100%; display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.35rem; }
+.row-label { width: 28px; color: #ffd700; font-weight: 600; }
+.row-seats { display: flex; gap: 0.5rem; flex-wrap: nowrap; justify-content: flex-end; flex: 1; }
+
+.screen {
+  background: linear-gradient(90deg,#222,#111);
+  border-radius: 6px;
+  padding: 0.7rem 1rem;
+  text-align: center;
+  color: #ffd700;
+  font-weight: 700;
+  margin-top: 1rem;
+}
+
+.seat {
+  width: 44px; height: 36px; border-radius: 6px; border: 1px solid #444; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; color: #000; font-weight: 600;
+}
+.seat.available { background: #fff; }
+.seat.selected { background: #2b6eff; color: #fff; }
+.seat.reserved { background: #ff4d4f; color: #fff; cursor: not-allowed; opacity: 0.9; }
+
+.legend { display:flex; gap:1.25rem; margin-top: 1rem; color: #ddd; align-items:center; }
+.legend-box { display:inline-block; width:18px; height:14px; margin-right:6px; vertical-align:middle; }
+.legend-box.available { background: #fff; border: 1px solid #444; }
+.legend-box.selected { background: #2b6eff; }
+.legend-box.reserved { background: #ff4d4f; }
+
+.proceed-row { display:flex; justify-content:space-between; align-items:center; margin-top:1.25rem; }
+.selected-summary { color:#ddd; }
+.proceed-btn { background: #ffd700; color:#000; border:none; padding:0.6rem 1.25rem; border-radius:8px; cursor:pointer; font-weight:700; }
+.proceed-btn[disabled] { opacity:0.5; cursor:not-allowed; }
+
+/* Category modal */
+.category-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display:flex; align-items:center; justify-content:center; z-index:40; }
+.category-modal { background: #1a1a1a; color: #fff; padding: 1.5rem; border-radius: 8px; width: 380px; max-width: 90%; }
+.category-modal h3 { margin: 0 0 1rem 0; color: #ffd700; font-size: 1.2rem; }
+.category-row { display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem; padding-bottom: 1rem; border-bottom: 1px solid #333; }
+.cat-info { flex: 1; }
+.cat-title { font-weight:700; margin-bottom: 0.25rem; }
+.cat-price { color:#999; font-size:0.9rem; }
+.cat-qty input { width: 120px; padding: 10px; border-radius:6px; border:1px solid #444; background:#fff; color:#000; font-weight:700; text-align:center; font-size:1rem; }
+.modal-note { color:#999; font-size:0.85rem; margin-bottom: 1rem; }
+.category-actions { display:flex; justify-content:flex-end; gap:0.75rem; }
+.category-actions .btn { padding:0.6rem 1rem; border-radius:6px; font-weight:700; border: none; cursor:pointer; }
+.category-actions .btn.cancel { background:#444; color:#fff; }
+.category-actions .btn.accept { background:#ffd700; color:#000; }
+.category-actions .btn.accept[disabled] { opacity:0.5; cursor:not-allowed; }
+
+@media (max-width: 640px) {
+  .seat { width:36px; height:30px; }
+  .row-label { width: 20px; }
+  .booking-header { flex-direction: column; align-items:flex-start; }
+  .seats-columns { flex-direction: column; }
+  .seats-column { width: 100%; }
+  .row-seats { justify-content: center; }
+}

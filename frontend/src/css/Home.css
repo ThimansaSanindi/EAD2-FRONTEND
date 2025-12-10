@@ -1,0 +1,146 @@
+.home {
+  padding: 2rem 0;
+  width: 100%;
+  box-sizing: border-box;
+  position: relative;
+  background-color: linear-gradient(135deg, #f9e8e8 0%, #e6e1e1 50%, #ebebeb 100%);
+}
+.home h2 {
+   color: white;
+}
+.search-form {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.search-input {
+  width: 350px;
+  padding: 0.6rem 1rem;
+  border-radius: 5px;
+  background: #333;
+  color: whitesmoke;
+  border: none;
+}
+
+.search-btn {
+  padding: 0.6rem 1.3rem;
+  background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);;
+  border-radius: 5px;
+  color: rgb(6, 6, 6);
+  cursor: pointer;
+  border: none;
+}
+
+.search-btn:hover {
+  background: #f40612;
+}
+
+
+.movies-scroll-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 3rem;
+  box-sizing: border-box;
+}
+
+.movies-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding: 1rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+}
+
+.movies-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.scroll-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(246, 245, 245, 0.7);
+  color: white;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.3s ease;
+}
+
+.scroll-btn:hover {
+  background: rgba(0, 0, 0, 0.9);
+}
+
+.scroll-btn-left {
+  left: 1rem;
+}
+
+.scroll-btn-right {
+  right: 1rem;
+}
+.dropdowns-group {
+  display: flex;
+  align-items: right;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.filter-group {
+  display: flex;
+}
+
+.filter-select {
+  padding: 1rem 1.5rem;
+  border: 2px solid #333;
+  border-radius: 25px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.upcoming-scroll-container {
+  display: flex;
+  overflow-x: auto;
+  gap: 1.5rem;
+  padding: 1rem;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.upcoming-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+.movies-scroll-container {
+  flex-wrap: nowrap;
+}
+
+.movies-scroll-container > div,
+.upcoming-scroll-container > div {
+  flex-shrink: 0;
+}
+
+
+
+
