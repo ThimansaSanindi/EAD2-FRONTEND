@@ -8,7 +8,7 @@ import Profile from './pages/Profile';
 import Booking from './pages/Booking';
 import Payment from './pages/Payment';
 import Signup from './pages/Signup';
-import TheaterManagerDashboard from "./pages/TheaterManagerDashboard";
+
 
 
 function App() {
@@ -25,7 +25,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/signup" element={<Signup />} />
-          <Route  path="/theater-manager-dashboard" element={<TheaterManagerDashboard />} /></Routes>
+          </Routes>
       </main>
     </div>
   );
