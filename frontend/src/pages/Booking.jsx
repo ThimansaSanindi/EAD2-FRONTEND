@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { seatAPI } from "../services/api";
 import "../css/Booking.css";
 
 // Simple seat map generator
-const makeSeatRows = (rows = 8, cols = 10) => {
+const makeSeatRows = (rows = 8, cols = 6) => {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
   const result = [];
   for (let r = 0; r < rows; r++) {
@@ -22,37 +23,87 @@ export default function Booking() {
   const navigate = useNavigate();
 
   // Expecting state: { movie, cinema, show, date }
-  const { movie, cinema, show, date } = location.state || {};
+  // OR: { movie, showtime, date } - we need to handle both
+  const { movie, cinema, show, date, showtime } = location.state || {};
 
-  // Fallback mock values if route state isn't provided
-  const movieTitle = movie?.title || `Movie #${id || "?"}`;
+  // Use showtime if available, otherwise use show/cinema
+  const actualShowtime = showtime || show;
+  const actualCinema = cinema || (showtime ? {
+    cinema: showtime.theater_name || `Theater ${showtime.theater_id}`,
+    location: showtime.theater_location || "Unknown Location"
+  } : null);
+
+  // REAL DATA - No fallbacks
+  const movieTitle = movie?.title;
   const movieLang = movie?.language || "English";
-  const cinemaName = cinema?.cinema || (cinema?.name || "PVR Cinemas");
-  const cinemaLocation = cinema?.location || "One Gall Face Mall";
-  const showTime = show?.time || "09:00 AM";
+  const cinemaName = actualCinema?.cinema || actualCinema?.name;
+  const cinemaLocation = actualCinema?.location;
+  const showTime = actualShowtime?.time || 
+                   (actualShowtime?.show_time ? 
+                    new Date(actualShowtime.show_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
+                    null);
   const showDate = date || new Date().toISOString().split("T")[0];
+  const showtimeId = actualShowtime?.id;
 
-  // Seat map (8 rows x 6 columns)
-  const seatRows = useMemo(() => makeSeatRows(8, 6), []);
-
-  // Mock reserved seats (would come from backend normally) - adjusted for 6 columns
-  const [reserved] = useState(new Set(["A1", "A2", "B5", "C6", "D4", "H6"]));
+  // State for REAL seat data
+  const [loading, setLoading] = useState(true);
+  const [seatData, setSeatData] = useState(null);
+  const [reservedSeats, setReservedSeats] = useState(new Set());
   const [selectedSeats, setSelectedSeats] = useState([]);
+  const [seatLayout, setSeatLayout] = useState({ rows: 8, cols: 6 });
 
+  // Fetch REAL seat availability
+  useEffect(() => {
+    const fetchSeatData = async () => {
+      if (!showtimeId) {
+        console.error("No showtimeId available!");
+        alert("Showtime information is missing. Please go back and select a showtime.");
+        navigate(-1);
+        return;
+      }
+
+      try {
+        setLoading(true);
+        console.log("[Booking] Fetching seat data for showtimeId:", showtimeId);
+        
+        const data = await seatAPI.getSeatAvailability(showtimeId);
+        console.log("[Booking] Seat data received:", data);
+        
+        setSeatData(data);
+        setReservedSeats(new Set(data.reservedSeats || []));
+        setSeatLayout(data.layout || { rows: 8, cols: 6 });
+        
+      } catch (error) {
+        console.error("[Booking] Failed to fetch seat data:", error);
+        alert("Failed to load seat availability. Please try again.");
+        navigate(-1);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSeatData();
+  }, [showtimeId, navigate]);
+
+  // Seat map based on REAL layout
+  const seatRows = useMemo(() => makeSeatRows(seatLayout.rows, seatLayout.cols), [seatLayout]);
+
+  // Existing feature: Seat selection
   const toggleSeat = (seatId) => {
-    if (reserved.has(seatId)) return; // can't select reserved
+    if (reservedSeats.has(seatId)) return; // can't select reserved
     setSelectedSeats((prev) => {
       if (prev.includes(seatId)) return prev.filter((s) => s !== seatId);
       return [...prev, seatId];
     });
   };
 
+  // Existing feature: Proceed to category modal
   const proceed = () => {
     if (selectedSeats.length === 0) return;
-    // Open category selection modal before navigating to confirmation
     setCategoryModalOpen(true);
   };
 
+  // Existing feature: Category modal state
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const seatsCount = selectedSeats.length || 0;
   const [qtyFull, setQtyFull] = useState(0);
@@ -62,37 +113,69 @@ export default function Booking() {
   // Must equal exactly the number of selected seats
   const canConfirm = totalQty === seatsCount && seatsCount > 0;
 
-  // When full quantity changes, adjust half to maintain total = seatsCount
+  // Existing feature: Quantity adjustment
   const handleQtyFullChange = (val) => {
     const newFull = Math.max(0, Math.min(seatsCount, Number(val || 0)));
     setQtyFull(newFull);
     setQtyHalf(Math.max(0, seatsCount - newFull));
   };
 
-  // When half quantity changes, adjust full to maintain total = seatsCount
+  // Existing feature: Quantity adjustment
   const handleQtyHalfChange = (val) => {
     const newHalf = Math.max(0, Math.min(seatsCount, Number(val || 0)));
     setQtyHalf(newHalf);
     setQtyFull(Math.max(0, seatsCount - newHalf));
   };
 
+  // Existing feature: Confirm categories and navigate to payment
   const handleConfirmCategories = () => {
     if (!canConfirm) return;
-    // navigate to payment with category details
+    
+    // Use REAL pricing if available from showtime, otherwise use defaults
+    const basePrice = actualShowtime?.price || 1100;
+    const halfPrice = Math.round(basePrice * 0.77); // ~850 for 1100 base
+    
     navigate("/payment", {
       state: {
         movie,
-        cinema,
-        show,
+        cinema: actualCinema,
+        show: actualShowtime,
         date: showDate,
         seats: selectedSeats,
         categories: {
-          odcFull: { qty: qtyFull, price: 1100 },
-          odcHalf: { qty: qtyHalf, price: 850 }
-        }
+          odcFull: { qty: qtyFull, price: basePrice },
+          odcHalf: { qty: qtyHalf, price: halfPrice }
+        },
+        showtimeId: showtimeId, // Pass showtimeId for booking creation
+        movieId : movie?.id || movie?.movieId// Pass movieId for booking creation
       }
     });
   };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="booking-page">
+        <div className="loading" style={{ textAlign: 'center', padding: '3rem' }}>
+          <h3>Loading Seat Availability</h3>
+          <p>Please wait while we fetch available seats...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state - missing required data
+  if (!movieTitle || !cinemaName || !showTime) {
+    return (
+      <div className="booking-page">
+        <div style={{ textAlign: 'center', padding: '3rem' }}>
+          <h2>Invalid Booking Request</h2>
+          <p>Required information is missing. Please go back and select a showtime.</p>
+          <button onClick={() => navigate(-1)}>Go Back</button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="booking-page">
@@ -105,12 +188,15 @@ export default function Booking() {
         <div className="booking-meta">
           <div className="date">Date: <strong>{new Date(showDate).toLocaleDateString()}</strong></div>
           <div className="time">Time: <strong>{showTime}</strong></div>
+          {seatData && (
+            <div className="available-info">Available: {seatData.availableSeats?.length || 0} seats</div>
+          )}
         </div>
       </header>
 
       <main className="booking-main">
         <div className="seats-wrapper">
-          {/* Split rows into two columns */}
+          {/* Split rows into two columns - EXISTING FEATURE */}
           {(() => {
             const half = Math.ceil(seatRows.length / 2);
             const left = seatRows.slice(0, half);
@@ -124,7 +210,7 @@ export default function Booking() {
                       <div className="row-seats">
                         {row.map((seat) => {
                           const id = seat.id;
-                          const isReserved = reserved.has(id);
+                          const isReserved = reservedSeats.has(id);
                           const isSelected = selectedSeats.includes(id);
                           const cls = isReserved ? "seat reserved" : isSelected ? "seat selected" : "seat available";
                           return (
@@ -151,7 +237,7 @@ export default function Booking() {
                       <div className="row-seats">
                         {row.map((seat) => {
                           const id = seat.id;
-                          const isReserved = reserved.has(id);
+                          const isReserved = reservedSeats.has(id);
                           const isSelected = selectedSeats.includes(id);
                           const cls = isReserved ? "seat reserved" : isSelected ? "seat selected" : "seat available";
                           return (
@@ -196,7 +282,7 @@ export default function Booking() {
         </div>
       </main>
 
-      {/* Category selection modal */}
+      {/* Category selection modal - EXISTING FEATURE */}
       {categoryModalOpen && (
         <div className="category-modal-overlay">
           <div className="category-modal">
@@ -205,7 +291,9 @@ export default function Booking() {
             <div className="category-row">
               <div className="cat-info">
                 <div className="cat-title">ODC FULL</div>
-                <div className="cat-price">LKR 1,100.00</div>
+                <div className="cat-price">
+                  LKR {(actualShowtime?.price || 1100).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </div>
               </div>
               <div className="cat-qty">
                 <input
@@ -221,7 +309,9 @@ export default function Booking() {
             <div className="category-row">
               <div className="cat-info">
                 <div className="cat-title">ODC HALF</div>
-                <div className="cat-price">LKR 850.00</div>
+                <div className="cat-price">
+                  LKR {Math.round((actualShowtime?.price || 1100) * 0.77).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                </div>
               </div>
               <div className="cat-qty">
                 <input
@@ -239,7 +329,7 @@ export default function Booking() {
             <div className="category-actions">
               <button className="btn cancel" onClick={() => setCategoryModalOpen(false)}>Cancel</button>
               <button className="btn accept" onClick={handleConfirmCategories} disabled={!canConfirm}>
-                Proceed
+                Proceed to Payment
               </button>
             </div>
           </div>
@@ -248,4 +338,3 @@ export default function Booking() {
     </div>
   );
 }
-

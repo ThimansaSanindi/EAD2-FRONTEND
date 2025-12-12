@@ -9,6 +9,8 @@ const BOOKING_BASE = import.meta.env.VITE_BOOKING_API || import.meta.env.REACT_A
 const PAYMENT_BASE = import.meta.env.VITE_PAYMENT_API || import.meta.env.REACT_APP_PAYMENT_API || '/api/payments';
 const MOVIE_BASE = import.meta.env.VITE_MOVIE_API || import.meta.env.REACT_APP_MOVIE_API || '/api/movies';
 const SHOWTIME_BASE = import.meta.env.VITE_SHOWTIME_API || import.meta.env.REACT_APP_SHOWTIME_API || '/api/showtimes';
+const SEAT_BASE = import.meta.env.VITE_SEAT_API || import.meta.env.REACT_APP_SEAT_API || '/api/seats';
+
 
 const createClient = (baseURL) => {
   const c = axios.create({ baseURL, timeout: 10000, headers: { 'Content-Type': 'application/json' } });
@@ -30,8 +32,12 @@ const createClient = (baseURL) => {
   }, (e) => Promise.reject(e));
   c.interceptors.response.use((res) => res.data, (error) => {
     console.error('API Error:', error);
+    console.error('Request URL:', error.config?.url);
+    console.error('Request Method:', error.config?.method);
+    console.error('Response Status:', error.response?.status);
+    console.error('Response Data:', error.response?.data);
     if (error.response) {
-      throw new Error(error.response.data.error || error.response.data.message || 'Request failed');
+      throw new Error(error.response.data.error || error.response.data.message || error.response.statusText || 'Request failed');
     } else if (error.request) {
       throw new Error('Network error: Unable to connect to server');
     } else {
@@ -46,6 +52,7 @@ const bookingClient = createClient(BOOKING_BASE);
 const paymentClient = createClient(PAYMENT_BASE);
 const movieClient = createClient(MOVIE_BASE);
 const showtimeClient = createClient(SHOWTIME_BASE);
+const seatClient = createClient(SEAT_BASE);
 
 // User API
 export const userAPI = {
@@ -55,6 +62,7 @@ export const userAPI = {
   updateUser: (userId, userData) => userClient.put(`/${userId}`, userData),
   // Change password: many backends use PUT /api/users/{id}/password or POST /api/users/{id}/change-password
   // We implement the common PUT variant. Adjust if your backend differs.
+  deleteUser: (userId) => userClient.delete(`/${userId}`),
   changePassword: (userId, payload) => userClient.put(`/${userId}/password`, payload),
   health: () => userClient.get('/health')
 };
@@ -64,35 +72,7 @@ export const bookingAPI = {
   // expected: GET /api/bookings/user/{userId}
   getBookingsByUser: (userId) => bookingClient.get(`/user/${userId}`),
   getBooking: (bookingId) => bookingClient.get(`/${bookingId}`),
-  // Try common booking creation endpoints in order to tolerate backend path mismatches.
-  createBooking: async (bookingData) => {
-    const candidates = ['/', '', '/bookings', '/bookings/', '/create', '/book', '/bookings/bookings'];
-    const errors = [];
-    for (const p of candidates) {
-      try {
-        console.debug('[bookingAPI] trying POST', bookingClient.defaults.baseURL + p);
-        const res = await bookingClient.post(p, bookingData);
-        console.debug('[bookingAPI] success on', p, res);
-        return res;
-      } catch (err) {
-        const status = err?.response?.status;
-        console.warn('[bookingAPI] attempt failed', { path: p, status, message: err?.message });
-        errors.push({ path: p, status, message: err?.message, data: err?.response?.data });
-        // If it's a 404, try next candidate. For 405 (Method Not Allowed) or other
-        // server errors, keep trying other candidates (some services expose alternate paths).
-        // But if it's a network/auth error with no response, stop early.
-        if (!err.response) {
-          throw new Error(`Network/error when attempting POST ${p}: ${err.message}`);
-        }
-        // continue to next candidate
-      }
-    }
-    // All attempts failed — throw aggregated error with details
-    const summary = errors.map(e => `${e.path} => ${e.status || 'NO_RESP'}: ${e.message}`).join('; ');
-    const ex = new Error('All booking create attempts failed: ' + summary);
-    ex.attempts = errors;
-    throw ex;
-  },
+  createBooking: (bookingData) => bookingClient.post('', bookingData),
   updateBooking: (bookingId, bookingData) => bookingClient.put(`/${bookingId}`, bookingData),
   cancelBooking: (bookingId) => bookingClient.delete(`/${bookingId}`),
 };
@@ -100,9 +80,9 @@ export const bookingAPI = {
 // Payment API - adjust endpoints to match your payment microservice
 export const paymentAPI = {
   // Payments controller endpoints
-  getAllPayments: () => paymentClient.get('/'),
+  getAllPayments: () => paymentClient.get(''),
   getPaymentById: (id) => paymentClient.get(`/${id}`),
-  createPayment: (paymentData) => paymentClient.post('/', paymentData),
+  createPayment: (paymentData) => paymentClient.post('', paymentData),
   updatePayment: (id, paymentData) => paymentClient.put(`/${id}`, paymentData),
   deletePayment: (id) => paymentClient.delete(`/${id}`),
   getPaymentsByUser: (userId) => paymentClient.get(`/user/${userId}`),
@@ -140,6 +120,21 @@ export const showtimeAPI = {
   createShowtime: (showtimeData) => showtimeClient.post('/', showtimeData),
   updateShowtime: (showtimeId, showtimeData) => showtimeClient.put(`/${showtimeId}`, showtimeData),
   deleteShowtime: (showtimeId) => showtimeClient.delete(`/${showtimeId}`)
+};
+
+export const seatAPI = {
+  getSeatsByShowtime: (showtimeId) => seatClient.get(`/showtime/${showtimeId}`),
+  
+  getAvailableSeats: (showtimeId) => seatClient.get(`/showtime/${showtimeId}/available`),
+  
+  // Add this endpoint to SeatController first
+  getSeatAvailability: (showtimeId) => seatClient.get(`/showtime/${showtimeId}/availability`),
+  
+  reserveSeats: (showtimeId, seatNumbers) => 
+    seatClient.post(`/showtime/${showtimeId}/reserve`, { seats: seatNumbers }),
+  
+  // Optional: initialization endpoint
+  initializeSeats: (showtimeId) => seatClient.post(`/showtime/${showtimeId}/init`)
 };
 
 export const loginUser = userAPI.login;

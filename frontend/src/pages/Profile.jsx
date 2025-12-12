@@ -36,10 +36,12 @@ function Profile() {
       setLoadingBookings(true);
       try {
         const data = await bookingAPI.getBookingsByUser(user.id);
+        console.log('[Profile] Bookings fetched:', data);
         // bookingAPI should return an array or an object with bookings
         setBookingHistory(Array.isArray(data) ? data : (data.bookings || []));
       } catch (err) {
-        console.error('Failed to load bookings', err);
+        console.error('[Profile] Failed to load bookings', err);
+        setBookingHistory([]);
       } finally {
         setLoadingBookings(false);
       }
@@ -49,9 +51,11 @@ function Profile() {
       setLoadingPayments(true);
       try {
         const data = await paymentAPI.getPaymentsByUser(user.id);
+        console.log('[Profile] Payments fetched:', data);
         setPaymentsHistory(Array.isArray(data) ? data : (data.payments || []));
       } catch (err) {
-        console.error('Failed to load payments', err);
+        console.error('[Profile] Failed to load payments', err);
+        setPaymentsHistory([]);
       } finally {
         setLoadingPayments(false);
       }
@@ -64,7 +68,7 @@ function Profile() {
   // Booking history and payment history loaded from backend
   const [bookingHistory, setBookingHistory] = useState([]);
   const [paymentsHistory, setPaymentsHistory] = useState([]);
-  const [cardDetails, setCardDetails] = useState([]); // local saved cards (if you manage them separately)
+ 
   const [loadingBookings, setLoadingBookings] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
 
@@ -75,13 +79,7 @@ function Profile() {
     confirmPassword: ""
   });
 
-  const [newCard, setNewCard] = useState({
-    cardNumber: "",
-    expiry: "",
-    cvv: "",
-    cardholderName: "",
-    isDefault: false
-  });
+  
 
   // Form handlers
   const handleProfileUpdate = async (e) => {
@@ -150,65 +148,41 @@ function Profile() {
     })();
   };
 
-  const handleAddCard = (e) => {
-    e.preventDefault();
-    const newCardData = {
-      id: cardDetails.length + 1,
-      cardNumber: newCard.cardNumber.slice(-4),
-      expiry: newCard.expiry,
-      cardType: "Visa", 
-      isDefault: newCard.isDefault
-    };
-
-    // If setting as default, remove default from other cards
-    if (newCard.isDefault) {
-      setCardDetails(prev => prev.map(card => ({ ...card, isDefault: false })));
+  
+  const handleDeleteProfile = () => {
+   if (confirmText.toLowerCase() !== "delete my account") {
+      alert("Please type 'delete my account' to confirm.");
+      return;
     }
 
-    setCardDetails(prev => [...prev, newCardData]);
-    alert("Card added successfully!");
-    setNewCard({ cardNumber: "", expiry: "", cvv: "", cardholderName: "", isDefault: false });
-  };
+    if (!user || !user.id) {
+      alert('No authenticated user to delete.');
+      return;
+    }
 
-  const setDefaultCard = (cardId) => {
-    setCardDetails(cards => 
-      cards.map(card => ({
-        ...card,
-        isDefault: card.id === cardId
-      }))
-    );
-  };
-
-  const deleteCard = (cardId) => {
-    setCardDetails(cards => cards.filter(card => card.id !== cardId));
-  };
-
-  const cancelBooking = (bookingId) => {
-    if (!window.confirm("Are you sure you want to cancel this booking?")) return;
-    // Call booking API to cancel
     (async () => {
       try {
-        await bookingAPI.cancelBooking(bookingId);
-        setBookingHistory(prev => prev.map(b => b.id === bookingId ? { ...b, status: 'Cancelled' } : b));
-        alert(`Booking ${bookingId} cancelled successfully!`);
+        // Call backend to delete user account
+        await userAPI.deleteUser(user.id);
+        console.log('[Profile] User account deleted:', user.id);
+        
+        alert("Account deleted successfully!");
+        setShowDeleteModal(false);
+        setConfirmText("");
+        
+        // Clear authentication and redirect to home/login
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        localStorage.removeItem('isAuthenticated');
+        setUser(null);
+        navigate('/login');
       } catch (err) {
-        console.error('Cancel booking error', err);
-        alert(err.message || 'Failed to cancel booking');
+        console.error('[Profile] Failed to delete account', err);
+        alert(err.message || 'Failed to delete account');
       }
     })();
   };
-  const handleDeleteProfile = () => {
-  if (confirmText.toLowerCase() === "delete my account") {
-    alert("Account deleted successfully!");
-    setShowDeleteModal(false);
-    setConfirmText("");
-  } else {
-    alert("Please type 'delete my account' to confirm.");
-  }
-};
-
   return (
-    
     <div className="profile-container">
       <div className="profile-sidebar">
         <div className="profile-header">
@@ -230,13 +204,13 @@ function Profile() {
             className={`nav-item ${activeSection === "changePassword" ? "active" : ""}`}
             onClick={() => setActiveSection("changePassword")}
           >
-         Change Password
+            Change Password
           </button>
           <button 
             className={`nav-item ${activeSection === "bookingHistory" ? "active" : ""}`}
             onClick={() => setActiveSection("bookingHistory")}
           >
-          Booking History
+            Booking History
           </button>
           <button 
             className={`nav-item ${activeSection === "paymentsHistory" ? "active" : ""}`}
@@ -244,26 +218,17 @@ function Profile() {
           >
             Payments
           </button>
-          <button 
-            className={`nav-item ${activeSection === "cardDetails" ? "active" : ""}`}
-            onClick={() => setActiveSection("cardDetails")}
-          >
-            
-        Card Details
-        
-          </button>
+          
           <button 
             className="delete-profile-btn"
             onClick={() => setShowDeleteModal(true)}
           >
-            🗑️ Delete Profile
+            🗑 Delete Profile
           </button>
         </nav>
       </div>
       
-
       <div className="profile-content">
-        
         {activeSection === "editProfile" && (
           <div className="section">
             <h2>Edit Profile</h2>
@@ -343,44 +308,44 @@ function Profile() {
             </form>
           </div>
         )}
-
        
         {activeSection === "bookingHistory" && (
           <div className="section">
             <h2>Booking History</h2>
-            <div className="booking-list">
-              {bookingHistory.map(booking => (
-                <div key={booking.id} className="booking-card">
-                  <div className="booking-info">
-                    <h4>{booking.movie}</h4>
-                    <div className="booking-details">
-                      <p><strong>Theater:</strong> {booking.theater}</p>
-                      <p><strong>Date & Time:</strong> {booking.date} at {booking.time}</p>
-                      <p><strong>Seats:</strong> {booking.seats.join(", ")}</p>
-                      <p><strong>Total:</strong> ${booking.total}</p>
+            {loadingBookings ? (
+              <p>Loading booking history...</p>
+            ) : bookingHistory.length === 0 ? (
+              <p>No bookings found.</p>
+            ) : (
+              <div className="booking-list">
+                {bookingHistory.map(booking => (
+                  <div key={booking.bookingId || booking.id} className="booking-card">
+                    <div className="booking-info">
+                      <h4>Booking #{booking.bookingId || booking.id}</h4>
+                      <div className="booking-details">
+                        <p><strong>Movie ID:</strong> {booking.movieId}</p>
+                        <p><strong>Showtime ID:</strong> {booking.showtimeId}</p>
+                        <p><strong>Seats:</strong> {booking.seatsSelected}</p>
+                        <p><strong>Adults:</strong> {booking.totalAdults}, <strong>Children:</strong> {booking.totalChildren}</p>
+                      </div>
+                    </div>
+                    <div className="booking-actions">
+                      <div className={`booking-status ${booking.status.toLowerCase()}`}>
+                        {booking.status}
+                      </div>
+                      {booking.status === "CONFIRMED" && (
+                        <button 
+                          className="cancel-btn"
+                          onClick={() => cancelBooking(booking.bookingId || booking.id)}
+                        >
+                          Cancel Booking
+                        </button>
+                      )}
                     </div>
                   </div>
-                  <div className="booking-actions">
-                    <div className={`booking-status ${booking.status.toLowerCase()}`}>
-                      {booking.status}
-                    </div>
-                    {booking.status === "Completed" && (
-                      <button className="download-btn">
-                        Download Ticket
-                      </button>
-                    )}
-                    {booking.status === "Confirmed" && (
-                      <button 
-                        className="cancel-btn"
-                        onClick={() => cancelBooking(booking.id)}
-                      >
-                        Cancel Booking
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -394,123 +359,21 @@ function Profile() {
             ) : (
               <div className="payments-list">
                 {paymentsHistory.map(p => (
-                  <div key={p.id} className="payment-card">
-                    <div><strong>ID:</strong> {p.id}</div>
-                    <div><strong>Booking:</strong> {p.bookingId}</div>
-                    <div><strong>Amount:</strong> {p.amount}</div>
+                  <div key={p.paymentId || p.id} className="payment-card">
+                    <div><strong>Payment ID:</strong> {p.paymentId || p.id}</div>
+                    <div><strong>Booking ID:</strong> {p.bookingId}</div>
+                    <div><strong>Amount:</strong> LKR {parseFloat(p.amount).toFixed(2)}</div>
                     <div><strong>Method:</strong> {p.paymentMethod}</div>
-                    <div><strong>Status:</strong> {p.status}</div>
-                    <div><strong>Date:</strong> {new Date(p.createdAt || p.date || p.timestamp || Date.now()).toLocaleString()}</div>
+                    <div><strong>Status:</strong> {p.paymentStatus}</div>
+                    <div><strong>Transaction ID:</strong> {p.transactionId}</div>
+                    <div><strong>Date:</strong> {p.paymentDate ? new Date(p.paymentDate).toLocaleString() : 'N/A'}</div>
                   </div>
                 ))}
               </div>
             )}
           </div>
         )}
-
         
-        {activeSection === "cardDetails" && (
-          <div className="section">
-            <h2>Card Details</h2>
-           
-            <div className="cards-list">
-              {cardDetails.map(card => (
-                <div key={card.id} className="card-item">
-                  <div className="card-info">
-                    <div className="card-header">
-                      <div className="card-type">{card.cardType}</div>
-                      {card.isDefault && <span className="default-badge">Default</span>}
-                    </div>
-                    <div className="card-number">**** **** **** {card.cardNumber}</div>
-                    <div className="card-expiry">Expires: {card.expiry}</div>
-                  </div>
-                  <div className="card-actions">
-                    {!card.isDefault && (
-                      <button 
-                        className="action-btn"
-                        onClick={() => setDefaultCard(card.id)}
-                      >
-                        Set Default
-                      </button>
-                    )}
-                    <button 
-                      className="action-btn delete"
-                      onClick={() => deleteCard(card.id)}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            
-            <div className="add-card-form">
-              <h3>Add New Card</h3>
-              <form onSubmit={handleAddCard} className="profile-form">
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Card Number</label>
-                    <input 
-                      type="text" 
-                      placeholder="1234 5678 9012 3456" 
-                      value={newCard.cardNumber}
-                      onChange={(e) => setNewCard({...newCard, cardNumber: e.target.value})}
-                      maxLength="16"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>Expiry Date</label>
-                    <input 
-                      type="text" 
-                      placeholder="MM/YY" 
-                      value={newCard.expiry}
-                      onChange={(e) => setNewCard({...newCard, expiry: e.target.value})}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="form-group">
-                    <label>CVV</label>
-                    <input 
-                      type="text" 
-                      placeholder="123" 
-                      value={newCard.cvv}
-                      onChange={(e) => setNewCard({...newCard, cvv: e.target.value})}
-                      maxLength="3"
-                      required
-                    />
-                  </div>
-                </div>
-                
-                <div className="form-group">
-                  <label>Cardholder Name</label>
-                  <input 
-                    type="text" 
-                    placeholder="John Doe" 
-                    value={newCard.cardholderName}
-                    onChange={(e) => setNewCard({...newCard, cardholderName: e.target.value})}
-                    required
-                  />
-                </div>
-                
-                <div className="form-check">
-                  <input 
-                    type="checkbox" 
-                    id="setDefault" 
-                    checked={newCard.isDefault}
-                    onChange={(e) => setNewCard({...newCard, isDefault: e.target.checked})}
-                  />
-                  <label htmlFor="setDefault">Set as default payment method</label>
-                </div>
-                
-                <button type="submit" className="save-btn">Add Card</button>
-              </form>
-            </div>
-          </div>
-        )}
       </div>
 
       {showDeleteModal && (
@@ -554,4 +417,3 @@ function Profile() {
 }
 
 export default Profile;
-

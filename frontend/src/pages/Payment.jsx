@@ -9,7 +9,7 @@ export default function Payment() {
   const navigate = useNavigate();
 
   // Extract booking data from state
-  const { movie, cinema, show, date, seats, categories } = location.state || {};
+  const { movie, cinema, show, date, seats, categories, showtimeId, movieId } = location.state || {};
 
   // Fallback values
   const movieTitle = movie?.title || "Movie";
@@ -54,42 +54,54 @@ export default function Payment() {
     try {
       // 1) Create booking in booking service
       const bookingPayload = {
-        userId: user.id,
-        movieId: movie?.id || null,
-        cinema: cinemaName,
-        showId: show?.id || null,
-        date: showDate,
-        seats: selectedSeats,
-        categories: { odcFull, odcHalf },
-        total: totalAmount
+        userId: parseInt(user.id) || user.id,
+        movieId: parseInt(movieId || movie?.id || movie?.movieId),
+        showtimeId: String(showtimeId || show?.id),
+        seatsSelected: selectedSeats.join(','),
+        totalAdults: parseInt(categories?.odcFull?.qty) || 0,
+        totalChildren: parseInt(categories?.odcHalf?.qty) || 0,
+        status: 'APPROVED'
       };
 
+      console.log('[Payment] Creating booking with payload:', bookingPayload);
       const createdBooking = await bookingAPI.createBooking(bookingPayload);
-      const bookingId = createdBooking?.id || createdBooking?.bookingId || createdBooking;
+      const bookingId = createdBooking?.bookingId || createdBooking?.booking_id || createdBooking?.id;
+      
+      console.log('[Payment] Booking created:', createdBooking);
+      console.log('[Payment] Extracted bookingId:', bookingId, 'Type:', typeof bookingId);
+
+      if (!bookingId) {
+        throw new Error('Booking created but no ID returned');
+      }
 
       // 2) Create payment record in payment service
       const paymentPayload = {
-        bookingId,
-        userId: user.id,
+        bookingId: parseInt(bookingId) || bookingId,
+        userId: parseInt(user.id) || user.id,
         amount: totalAmount,
-        paymentMethod,
-        cardLast4: cardNumber.slice(-4)
+        payment_method : paymentMethod.toUpperCase(),
+        payment_status: 'Completed',
+        transaction_id: 'TXN' + Math.floor(Math.random() * 1000000)
       };
 
+      console.log('[Payment] Creating payment with payload:', paymentPayload);
+
       const paymentResult = await paymentAPI.createPayment(paymentPayload);
+      console.log('[Payment] Payment recorded:', paymentResult);
 
       // 3) Confirm booking (update status)
       try {
         await bookingAPI.updateBooking(bookingId, { status: 'Confirmed' });
+        console.log('[Payment] Booking status updated to Confirmed for ID:', bookingId);
       } catch (err) {
-        console.warn('Failed to update booking status; booking created but not updated', err);
+        console.warn('Failed to update booking status; booking and payment created but not updated', err);
       }
 
-      alert(`Payment successful (ID: ${paymentResult?.id || paymentResult}). Booking confirmed.`);
+      alert(`Payment successful! Your booking has been confirmed.`);
       navigate('/profile');
     } catch (err) {
       console.error('Payment flow error', err);
-      alert(err.message || 'Payment failed');
+      alert(err.message || 'Payment failed. Please try again.');
     } finally {
       setIsProcessing(false);
     }

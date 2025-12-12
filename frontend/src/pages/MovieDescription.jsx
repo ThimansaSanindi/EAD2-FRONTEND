@@ -5,14 +5,33 @@ import "../css/MovieDescription.css";
 
 const getTodayDate = () => new Date().toISOString().split('T')[0];
 
-const getNextDays = () => {
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const date = new Date();
-    date.setDate(date.getDate() + i);
-    days.push(date.toISOString().split('T')[0]);
+// NEW: Extract unique dates from showtimes
+const getAvailableDates = (showtimes) => {
+  if (!showtimes || !Array.isArray(showtimes) || showtimes.length === 0) {
+    return [getTodayDate()]; // Fallback to today if no showtimes
   }
-  return days;
+  
+  const dateSet = new Set();
+  showtimes.forEach(st => {
+    const raw = st?.show_time || st?.showTime || st?.showtime || st?.start_time || st?.startTime;
+    if (raw) {
+      const d = new Date(raw);
+      if (!isNaN(d)) {
+        dateSet.add(d.toISOString().split('T')[0]);
+      }
+    }
+  });
+  
+  // Convert to array, sort chronologically
+  const dates = Array.from(dateSet).sort();
+  
+  // Always include today if we have any showtimes
+  const today = getTodayDate();
+  if (!dates.includes(today) && dates.length > 0) {
+    dates.unshift(today);
+  }
+  
+  return dates.length > 0 ? dates : [today];
 };
 
 function MovieDescription() {
@@ -26,6 +45,10 @@ function MovieDescription() {
   const [showtimes, setShowtimes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  
+  const [availableDates, setAvailableDates] = useState([getTodayDate()]);
+
 
   useEffect(() => {
     const fetchMovieData = async () => {
@@ -44,17 +67,19 @@ function MovieDescription() {
         const stArray = Array.isArray(showtimeData) ? showtimeData : [];
         setShowtimes(stArray);
 
-        // If the current selected date doesn't match any returned showtime dates,
-        // fallback to the first available showtime date so something is visible.
-        const availableDates = stArray.map(s => {
-          const raw = s?.show_time || s?.showTime || s?.showtime || s?.start_time || s?.startTime;
-          const d = raw ? new Date(raw) : null;
-          return d && !isNaN(d) ? d.toISOString().split('T')[0] : null;
-        }).filter(Boolean);
 
-        if (availableDates.length > 0 && !availableDates.includes(selectedDate)) {
-          setSelectedDate(availableDates[0]);
+                // Extract dates from showtimes
+        const dates = getAvailableDates(stArray);
+        setAvailableDates(dates);
+        console.log('[MovieDescription] Available dates:', dates);
+
+        // If current selected date isn't in available dates, use first available
+        if (!dates.includes(selectedDate) && dates.length > 0) {
+          setSelectedDate(dates[0]);
+          console.log('[MovieDescription] Changed selectedDate to:', dates[0]);
         }
+       
+        
       } catch (err) {
         console.error('Error fetching movie data:', err);
         setError('Failed to load movie details.');
@@ -126,7 +151,7 @@ function MovieDescription() {
     );
   }
 
-  const dates = getNextDays();
+  
   const posterUrl = movie.poster_url || movie.posterUrl || '/images/default_poster.jpg';
 
   return (
@@ -166,13 +191,17 @@ function MovieDescription() {
         <section className="showtimes-section">
           <h2>Showtimes & Tickets</h2>
           <div className="date-selector">
-            {dates.map(date => (
+            {availableDates.map(date => (
               <button
                 key={date}
                 className={`date-btn ${selectedDate === date ? 'active' : ''}`}
                 onClick={() => setSelectedDate(date)}
               >
-                {new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                {new Date(date).toLocaleDateString('en-US', { 
+                  weekday: 'short', 
+                  month: 'short', 
+                  day: 'numeric' 
+                })}
               </button>
             ))}
           </div>
@@ -193,8 +222,22 @@ function MovieDescription() {
                 <div className="cinemas-list">
                   {filtered.map((showtime, idx) => {
                     const keyId = showtime.id ?? showtime.showtime_id ?? showtime._id ?? idx;
-                    const theaterName = showtime.theater_name || showtime.theaterName || `Theater ${showtime.theater_id || showtime.theaterId || ''}`;
-                    const theaterLocation = showtime.theater_location || showtime.theaterLocation || '';
+                    // FIND THIS:
+
+const theaterName = showtime.theater_name || 
+                    showtime.theaterName || 
+                    (showtime.theater_id === 1 ? "PVR Cinemas" : 
+                     showtime.theater_id === 2 ? "Scope Cinemas" :
+                     showtime.theater_id === 3 ? "Liberty Cinema" :
+                     `Theater ${showtime.theater_id}`);
+
+const theaterLocation = showtime.theater_location || 
+                        showtime.theaterLocation || 
+                        (showtime.theater_id === 1 ? "One Gall Face Mall" :
+                         showtime.theater_id === 2 ? "Colombo City Centre" :
+                         showtime.theater_id === 3 ? "Colombo 03" :
+                         "Colombo");
+                   
                     const timeLabel = formatShowTime(showtime);
                     const priceLabel = (showtime.price !== undefined && showtime.price !== null) ? `₦${showtime.price}` : '';
 
