@@ -54,8 +54,10 @@ function Login() {
             
             // Navigate to the intended page (if provided) or home
             alert(`Welcome back, ${user.name || user.email}!`);
-            const redirectTo = location?.state?.redirectTo || '/';
-            navigate(redirectTo);
+            const explicit = location?.state?.redirectTo;
+            const isManager = (user?.role || '').toUpperCase() === 'THEATER_MANAGER' || (user?.role || '').toUpperCase() === 'THEATRE_MANAGER' || (user?.role || '').toUpperCase() === 'MANAGER';
+            const fallback = isManager ? '/theater-manager-dashboard' : '/';
+            navigate(explicit || fallback);
             
         } catch (err) {
             setError(err.message || "Login failed. Please check your credentials.");

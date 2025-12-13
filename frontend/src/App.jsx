@@ -1,5 +1,5 @@
 import './css/App.css';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import NavBar from './components/NavBar';
 import Home from './pages/Home';
 import MovieDescription from './pages/MovieDescription';
@@ -8,6 +8,8 @@ import Profile from './pages/Profile';
 import Booking from './pages/Booking';
 import Payment from './pages/Payment';
 import Signup from './pages/Signup';
+import TheaterManagerDashboard from './pages/TheaterManagerDashboard';
+
 
 
 
@@ -25,6 +27,8 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/theater-manager-dashboard" element={<TheaterManagerDashboard />} />
+          <Route path="/theater-manager" element={<Navigate to="/theater-manager-dashboard" replace />} />
           </Routes>
       </main>
     </div>

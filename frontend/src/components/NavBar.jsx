@@ -7,6 +7,8 @@ import { AuthContext } from "../contexts/AuthContext";
 function NavBar() {
   const { user, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+  const role = (user?.role || '').toUpperCase();
+  const isManager = role === 'THEATER_MANAGER' || role === 'THEATRE_MANAGER' || role === 'MANAGER';
 
   const handleLogout = () => {
     logout();
@@ -16,7 +18,8 @@ function NavBar() {
   return (
     <nav className="navbar">
       <div className="navbar-left">
-        <Link to="/" className="brand">Catch My Show</Link>
+        {!isManager && <Link to="/" className="nav-link">Home</Link>}
+        {isManager && <Link to="/theater-manager-dashboard" className="nav-link">Dashboard</Link>}
       </div>
 
       <div className="navbar-center">
